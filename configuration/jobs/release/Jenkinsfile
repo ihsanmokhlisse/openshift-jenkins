@@ -1,0 +1,156 @@
+#!groovy
+
+def builders    = [:]
+def ALL         =[[name: 'app1'          , app: 'app1'         , git: 'https://github.com/sterburg/app1.git'],
+                  [name: 'app2'          , app: 'app2'         , git: 'https://github.com/sterburg/app2.git'],
+                  [name: 'elasticsearch' , app: 'elasticsearch', git: 'https://github.com/sterburg/elasticsearch.git']]
+
+stage 'Build Release'
+
+for (app in ALL) {
+    if (application == 'ALL' || application == app.name) {
+      def fuse = false;
+      if (app.name == 'elasticsearch') {
+        fuse = true;
+      }
+      def branchToUse = app.branch;
+      if (branch) {
+        branchToUse = branch;
+      }
+      builders[app.name] = release(app.name, app.git, tag, branchToUse, release_maven, release_docker, app.java_version, app.has_docker, fuse)
+    }  
+}
+parallel builders
+
+
+def release(application,repo, tag, branchToUse, release_maven, release_docker, java_version, has_docker, fuse)
+{
+    println "Preparing release ${application}"
+    return {
+        print "Releasing ${application}"
+        def dev = "${application}-release"
+        
+        node('jdk-jenkins-slave') {
+            try{
+                
+          git changelog: false, credentialsId: 'ci_user_ssh', poll: false, url: "${repo}", branch: "${branchToUse}"
+                
+                def pom           = readMavenPom file : 'pom.xml'
+                def pomversion    = pom.version
+        def snapshot      = pomversion.replace("-SNAPSHOT", "")
+                def release       = snapshot + ".${currentBuild.number}"
+        def releasebin    = snapshot.substring(0, snapshot.lastIndexOf(".") + 1) + (snapshot.substring(snapshot.lastIndexOf(".") + 1, snapshot.length()).toInteger() - 1)
+                def groupId       = pom.groupId
+                def artifactId    = pom.artifactId
+                def version       = 'v' + release.charAt(0)
+            dev           = "${application}-release-${version}"
+                def maven_version = 'maven-3.3'
+                //  java_version ?: pom.properties.java.version
+                env.JAVA_HOME     = "${tool java_version}"
+                env.MAVEN_HOME    = "${tool maven_version}"
+                env.PATH          = "${env.MAVEN_HOME}/bin:${env.JAVA_HOME}/bin:${env.PATH}"
+        
+        def fusebinbuild  = '--from-dir=target\\/checkout'
+        def apibinbuild   = '--from-dir=target\\/checkout\\/deployments'
+        def sourceParam   = fuse ? "${fusebinbuild}" : "${apibinbuild}"
+        
+              
+        if (tag) {
+          release = "${tag}"
+          sh "git checkout -b ${branchToUse}-${release} ${tag}"
+        }
+        
+        println "DEBUG: application=${application}, release=${release}, version=${version}, tag=${tag}, repo=${repo}, branch=${branchToUse}, groupId=${groupId}, artifactId=${artifactId}, dev=${dev}, release_maven=${release_maven}, release_docker=${release_docker}, java_version=${java_version}, maven_version=${maven_version}"
+
+        if (release_maven != 'false' || fuse) {
+          sh "mvn -X -B release:prepare"
+          sh "mvn -X -B release:perform"
+          if (tag) {
+             sh "git checkout ${branchToUse}"
+             sh "git merge ${branchToUse}-${release}"
+             sh "git push origin ${branchToUse}"
+          }
+          sh "mv target/checkout/target/hawt-app target/checkout/deployments || true"
+
+        } else {
+          println "Retreiving existing release v${release}"
+        
+          def remoteRepositories = "http://nexus/content/repositories/releases"
+          
+          sh "mkdir -p target/checkout/deployments/"
+          sh "mvn dependency:get -D${remoteRepositories} -Dtransitive=false -DgroupId=${groupId} -DartifactId=${artifactId}-web -Dpackaging=war -Dversion=${releasebin} -Ddest=target/checkout/deployments/ || mvn dependency:get -D${remoteRepositories} -Dtransitive=false -DgroupId=${groupId} -DartifactId=${artifactId} -Dpackaging=jar -Dversion=${release} -Ddest=target/checkout/deployments/"
+        }
+               
+        
+        if (release_docker != 'false' && has_docker) {
+          //stage 'Build Docker Release'
+          
+          def APPLICATION = application.toUpperCase().replaceAll('-API','').replaceAll('-','_')
+          
+          retry(2) { //error prone
+              sh "oc new-project ${dev}"
+          }
+          sh "oc process openshift//${application}-dev VERSION_${APPLICATION}=${version} RELEASE_${APPLICATION}=${release} SOURCE_REPOSITORY_REF_${APPLICATION}=${branch} |oc create -f -"
+
+          sh 'oc get bc -o name |sed "s|buildconfig.||" > buildconfigs.out'
+          def buildConfigs      = readFile('buildconfigs.out').trim().split('\n')
+
+          sh 'oc get builds -o name |sed "s|build.||" > builds.out'
+          String[] builds       = readFile('builds.out').trim().split('\n')
+          sh 'oc get is -o name |sed "s|imagestream.||" > is.out'
+          String[] imageStreams = readFile('is.out').trim().split('\n')
+
+          
+          // Create ImageStream in openshift Service Catalog - if not yet exists
+          for (is in entries(imageStreams)) {
+             try{
+                 
+                 openshiftCreateResource namespace: 'openshift', jsonyaml: "{ \"kind\": \"ImageStream\", \"apiVersion\": \"v1\", \"metadata\": { \"name\": \"${is}\"}}"
+             }
+             catch(Exception ex) {
+                 println "Image ${is} already exists in Service Catalog"
+                 println(ex.toString());
+             }
+          }
+
+          // Promote to OpenShift Service Catalog
+          for (bc in entries(buildConfigs)) { 
+              println "Promoting ${bc}"
+                  sh "oc patch bc/${bc} --patch='{\"spec\": { \"output\": { \"to\": { \"namespace\": \"openshift\" } } }}'"
+              sh("oc cancel-build ${bc}-1 || true") 
+          }
+                  
+          sh "find target/checkout" //list files
+          sh "rm -rf target/checkout/{target,src,pom.xml} || true" //tar errors on some src files
+                      sourceParams = "${sourceParam}"
+                      dockerParams = "" 
+                      sh "oc get bc --template '{{range .items}} start-build {{ .metadata.name }} {{ .spec.strategy.type }} --wait --follow{{ \"\\n\" }}{{end}}' |sed 's/Source/${sourceParams}/' |sed 's/Docker/${dockerParams}/' |xargs -L1 oc || oc describe builds"
+          sh "oc logs build/${application}-${version}-2 || true"
+
+        }
+
+      } finally {
+        sh "oc delete project ${dev} || true"
+      }
+    }    
+  }
+}
+
+
+def retry(int times = 5, Closure errorHandler = {e-> log.warn(e.message,e)}
+     , Closure body) {
+  int retries = 0
+  def exceptions = []
+  while(retries++ < times) {
+    try {
+      return body.call()
+    } catch(e) {
+      exceptions << e
+      errorHandler.call(e)
+    }        
+  }
+  throw new Exception("Failed after $times retries")
+}
+
+@NonCPS def entries(String[] m) { return m.collect {v -> v} }
+@NonCPS def entries(String   m) { return [m] }

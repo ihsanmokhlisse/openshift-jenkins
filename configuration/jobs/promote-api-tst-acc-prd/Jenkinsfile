@@ -1,0 +1,117 @@
+#!groovy
+
+def ALL         =[[name: 'app1'          , app: 'app1'         , git: 'https://github.com/sterburg/app1.git'],
+                  [name: 'app2'          , app: 'app2'         , git: 'https://github.com/sterburg/app2.git'],
+                  [name: 'elasticsearch' , app: 'elasticsearch', git: 'https://github.com/sterburg/elasticsearch.git']]
+
+def APPLICATION = application.toUpperCase().replaceAll('-API','').replaceAll('-','_')
+def test        = "${application}-tst-${currentBuild.number}"
+def acceptance  = 'acceptance'
+def production  = 'production'
+def snapshot
+def release
+def version
+def myapp
+def fuse
+
+for (app in ALL) { 
+    if (application == app.name) { 
+        myapp = app
+        fuse = false
+        if (app.name == 'api' || app.name == 'elasticsearch') {
+               fuse = true
+        }
+    } 
+}
+
+
+stage 'Create Test Environment'
+try{
+    node('jdk-jenkins-slave') {
+        git changelog: false, credentialsId: 'ci_user_ssh', poll: false, url: "${myapp.git}", branch: "${branch}"
+
+        def pom           = readMavenPom file : 'pom.xml'
+            snapshot      = pom.version
+            release       = snapshot.replace("-SNAPSHOT", ".${currentBuild.number}")
+            version       = 'v' + release.charAt(0)
+            dev           = "${application}-release-${version}"
+
+
+        sh "git tag v${release}"
+        sh "git push --tags"
+
+        sh "oc new-project ${test}"
+        sh "oc secrets new-basicauth gitsecret --username=${username} --password=${password}"
+    //TODO: policy - give less people access
+        sh "oc policy add-role-to-group admin system:authenticated -n ${test}"
+        sh "oc process openschift//api-prd |oc create -f -"
+        sh "oc delete dc,svc --selector=\"app=${myapp.app},version=${version}\" || true" //overwrite existing prd dc with dev dc
+        sh "oc delete dc,svc,route ${application} || true" //overwrite existing prd dc with dev dc
+        sh "oc get dc --output=name |xargs -L1 oc scale --replicas=1"
+        sh "oc process openshift//${application}-dev VERSION_${APPLICATION}=${version} RELEASE_${APPLICATION}=${release} SOURCE_REPOSITORY_REF_${APPLICATION}=${branch} |oc create -f - || true"
+        sh "oc expose service frontend"
+        sh "oc patch route frontend --patch='{\"spec\": { \"tls\": { \"termination\": \"edge\" } } }'"
+    }
+
+
+    stage 'Testing'
+
+    // ** YOUR AUTOMATED TESTS HERE **
+    // use 'node' inside a 'parallel' where possible
+
+    timeout(time:5, unit:'DAYS') {
+        input id: "build_release", message: "Does https://frontend-${test}.openshift.company.nl look good?", ok: "Promote"
+    }
+
+
+    stage 'Build Release'
+
+    build job: 'release', 
+          parameters: [ [$class: 'StringParameterValue' , name: 'application'   , value: application   ] , 
+                    [$class: 'StringParameterValue' , name: 'branch'        , value: "${branch}" ] , 
+                    [$class: 'StringParameterValue' , name: 'tag'        , value: "v${release}" ] , 
+            [$class: 'BooleanParameterValue', name: 'release_maven' , value: true          ] , 
+            [$class: 'BooleanParameterValue', name: 'release_docker', value: true          ] ]
+
+}
+finally {
+    node('jdk-jenkins-slave') {
+        sh "oc delete project ${test} || true"
+    }
+    
+}
+
+//Stage ACCEPTANCE
+stage 'Deploy Acceptance'
+// input message: "Promote to ACCEPTANCE?", ok: "Promote"
+node('jdk-jenkins-slave') {
+    //TODO: ugly 'or' stagement (because not all apps have -version suffix). improve please
+    if (fuse) {
+       sh "oc tag openshift/${application}:'v'${release} openshift/${application}:${acceptance}"
+    } else {
+       sh "oc tag openshift/${application}-${version}:'v'${release} openshift/${application}-${version}:${acceptance}"
+    }
+}
+
+//Stage PRODUCTION
+stage 'Deploy Production'
+input message: "Promote to PRODUCTION?", ok: "Promote"
+node('jdk-jenkins-slave') {
+    //TODO: ugly 'or' stagement (because not all apps have -version suffix). improve please
+    if (fuse) {
+     sh "oc tag openshift/${application}:'v'${release} openshift/${application}:${production}"
+    } else {
+       sh "oc tag openshift/${application}-${version}:'v'${release} openshift/${application}-${version}:${production}"
+    }
+}
+
+
+//TODO: deleteme; alternative method
+def deploy(env,application,version,release) {
+    sh "oc new-project ${env} || true"
+    sh "oc project ${env}"
+    sh "oc policy add-role-to-group edit system:authenticated"
+
+    sh "oc delete dc ${application}-${version} || true" //overwrite old dc with new dc
+    sh "oc process openshift//${application}-prd VERSION_${APPLICATION}=${version} RELEASE_${APPLICATION}=${release} |oc create -f -"
+}

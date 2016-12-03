@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.2">
+  <actions/>
+  <description>maven release you are building (minor version suffix) (major version prepended from pom.xml): e.g.: 101</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <io.fabric8.jenkins.openshiftsync.BuildConfigProjectProperty plugin="openshift-sync@0.0.12">
+      <uid></uid>
+      <namespace></namespace>
+      <name></name>
+      <resourceVersion></resourceVersion>
+      <contextDir></contextDir>
+    </io.fabric8.jenkins.openshiftsync.BuildConfigProjectProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>application</name>
+          <description></description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>ALL</string> 
+              <string>app1</string>   
+              <string>app2</string>      
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>branch</name>
+          <description>leave empty for default value: master|develop</description>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>tag</name>
+          <description>from which tag should we release? (leave empty for head of branch)</description>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>release_maven</name>
+          <description>Should i create a maven release?</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>release_docker</name>
+          <description>Should i create a docker image of this release?</description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2.6">
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <url>https://github.com/sterburg/openshift-jenkins.git</url>
+          <credentialsId>ci_user_ssh</credentialsId>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec>
+          <name>*/master</name>
+        </hudson.plugins.git.BranchSpec>
+      </branches>
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>configuration/jobs/release/Jenkinsfile</scriptPath>
+  </definition>
+  <triggers/>
+</flow-definition>

@@ -1,0 +1,15 @@
+#!groovy
+
+stage 'Create Environment'
+node('jdk-jenkins-slave') {
+    try{
+        sh "oc new-project ${stage}"
+        sh "oc policy add-role-to-group admin system:authenticated -n ${stage}"
+        sh "oc process openshift//app-prd ENV=${stage} ESDATA_STORAGE=${esdata_storage} RELEASE_APP1=${stage} RELEASE_APP2=${stage} |oc create -f -"
+        sh "oc get dc --output=name |xargs -L1 oc scale --replicas=1"
+        sh "oc export template/api-prd -n openshift | oc create -f -"
+    }
+    catch(Exception ex) {
+        sh "echo oc delete project ${stage} || true"
+    }
+}

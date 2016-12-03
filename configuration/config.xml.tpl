@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<hudson>
+  <disabledAdministrativeMonitors/>
+  <version>1.651.2</version>
+  <numExecutors>50</numExecutors>
+  <mode>NORMAL</mode>
+  <useSecurity>true</useSecurity>
+  <authorizationStrategy class="hudson.security.GlobalMatrixAuthorizationStrategy">
+    <permission>hudson.model.Computer.Configure:admin</permission>
+    <permission>hudson.model.Computer.Configure:system_builder</permission>
+    <permission>hudson.model.Computer.Delete:admin</permission>
+    <permission>hudson.model.Hudson.Administer:admin</permission>
+    <permission>hudson.model.Hudson.Administer:system_builder</permission>
+    <permission>hudson.model.Hudson.Read:admin</permission>
+    <permission>hudson.model.Hudson.Read:system_builder</permission>
+    <permission>hudson.model.Hudson.Read:view</permission>
+    <permission>hudson.model.Item.Build:admin</permission>
+    <permission>hudson.model.Item.Configure:admin</permission>
+    <permission>hudson.model.Item.Create:admin</permission>
+    <permission>hudson.model.Item.Delete:admin</permission>
+    <permission>hudson.model.Item.Read:admin</permission>
+    <permission>hudson.model.Item.Read:view</permission>
+    <permission>hudson.model.Item.Workspace:admin</permission>
+    <permission>hudson.model.Run.Delete:admin</permission>
+    <permission>hudson.model.Run.Update:admin</permission>
+    <permission>hudson.model.View.Configure:admin</permission>
+    <permission>hudson.model.View.Create:admin</permission>
+    <permission>hudson.model.View.Delete:admin</permission>
+    <permission>hudson.scm.SCM.Tag:admin</permission>
+  </authorizationStrategy>
+  <securityRealm class="hudson.security.HudsonPrivateSecurityRealm">
+    <disableSignup>true</disableSignup>
+    <enableCaptcha>false</enableCaptcha>
+  </securityRealm>
+  <disableRememberMe>false</disableRememberMe>
+  <projectNamingStrategy class="jenkins.model.ProjectNamingStrategy$DefaultProjectNamingStrategy"/>
+  <workspaceDir>${ITEM_ROOTDIR}/workspace</workspaceDir>
+  <buildsDir>${ITEM_ROOTDIR}/builds</buildsDir>
+  <markupFormatter class="hudson.markup.RawHtmlMarkupFormatter" plugin="antisamy-markup-formatter@1.1">
+    <disableSyntaxHighlighting>false</disableSyntaxHighlighting>
+  </markupFormatter>
+  <jdks>
+    <jdk>
+      <name>oracle-jdk-7</name>
+      <home>/usr/java/jdk1.7.0_79</home>
+      <properties/>
+    </jdk>
+    <jdk>
+      <name>open-jdk-8</name>
+      <home>/usr/lib/jvm/java-1.8.0-openjdk</home>
+      <properties/>
+    </jdk>
+  </jdks>
+  <viewsTabBar class="hudson.views.DefaultViewsTabBar"/>
+  <myViewsTabBar class="hudson.views.DefaultMyViewsTabBar"/>
+  <clouds>
+    <org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud plugin="kubernetes@0.8">
+      <name>openshift</name>
+      <templates>
+        <org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+          <name>jdk-jenkins-slave</name>
+          <image>10.204.242.20:5000/${PROJECT_NAME}/jdk-jenkins-slave</image>
+          <privileged>false</privileged>
+          <alwaysPullImage>true</alwaysPullImage>
+          <command></command>
+          <args></args>
+          <remoteFs>/var/lib/jenkins</remoteFs>
+          <instanceCap>50</instanceCap>
+          <label>jdk-jenkins-slave</label>
+          <nodeSelector></nodeSelector>
+	  <serviceAccount>jenkins</serviceAccount>
+          <resourceRequestCpu></resourceRequestCpu>
+          <resourceRequestMemory></resourceRequestMemory>
+          <resourceLimitCpu></resourceLimitCpu>
+          <resourceLimitMemory></resourceLimitMemory>
+          <volumes>
+            <org.csanchez.jenkins.plugins.kubernetes.PodVolumes_-SecretVolume>
+              <mountPath>/var/lib/jenkins/.sshkeys</mountPath>
+              <secretName>ciusersshkey</secretName>
+            </org.csanchez.jenkins.plugins.kubernetes.PodVolumes_-SecretVolume>
+          </volumes>
+          <envVars/>
+          <annotations/>
+          <imagePullSecrets/>
+        </org.csanchez.jenkins.plugins.kubernetes.PodTemplate>
+      </templates>
+      <serverUrl>https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}</serverUrl>
+      <skipTlsVerify>true</skipTlsVerify>
+      <namespace>${PROJECT_NAME}</namespace>
+      <jenkinsUrl>http://${JENKINS_SERVICE_HOST}:${JENKINS_SERVICE_PORT}</jenkinsUrl>
+      <jenkinsTunnel>${JENKINS_JNLP_SERVICE_HOST}:${JENKINS_JNLP_SERVICE_PORT}</jenkinsTunnel>
+      <credentialsId>1a12dfa4-7fc5-47a7-aa17-cc56572a41c7</credentialsId>
+      <containerCap>100</containerCap>
+      <retentionTimeout>5</retentionTimeout>
+    </org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud>
+  </clouds>
+  <quietPeriod>1</quietPeriod>
+  <scmCheckoutRetryCount>0</scmCheckoutRetryCount>
+  <views>
+    <hudson.model.AllView>
+      <owner class="hudson" reference="../../.."/>
+      <name>All</name>
+      <filterExecutors>false</filterExecutors>
+      <filterQueue>false</filterQueue>
+      <properties/>
+    </hudson.model.AllView>
+  </views>
+  <primaryView>All</primaryView>
+  <slaveAgentPort>50000</slaveAgentPort>
+  <label>master</label>
+  <nodeProperties/>
+  <globalNodeProperties/>
+  <noUsageStatistics>true</noUsageStatistics>
+</hudson>

@@ -1,0 +1,34 @@
+#!groovy
+
+def api_application = application.replaceAll('-api','')
+def APPLICATION = api_application.toUpperCase()
+def dev         = "${application}-dev-${branch}"
+def repo        = "https://github.com/sterburg"
+
+stage 'Create Dev Environment'
+node('jdk-jenkins-slave') {
+    try
+    {
+        git changelog: false, credentialsId: 'ci_user_ssh', poll: false, url: "${repo}/${application}.git", branch: "master"
+        
+        // Create feature-branch
+        if ("${branch}" != 'master')
+        {
+            sh "git checkout -b ${branch}"
+            sh "git push -u origin \"${branch}\""
+        }
+    
+        sh "oc new-project ${dev}"
+        sh "oc policy add-role-to-group admin system:authenticated -n ${dev}"
+        sh "oc secrets new-basicauth gitsecret --username=${username} --password=${password}"
+        sh "oc process openshift//app-prd |oc create -f -"
+        sh "oc delete dc,svc,route ${application} || true" //overwrite existing prd dc with dev dc
+        sh "oc delete dc,svc --selector=\"app=${api_application},version=${version}\" || true" //overwrite existing prd dc with dev dc
+        sh "oc process openshift//${application}-dev VERSION_${APPLICATION}=${version} RELEASE_${APPLICATION}=${release} SOURCE_REPOSITORY_REF_${APPLICATION}=${branch} GIT_SECRET=gitsecret |oc create -f -"
+        sh "oc expose service frontend"
+        sh "oc patch route frontend --patch='{\"spec\": { \"tls\": { \"termination\": \"edge\" } } }'"
+    }
+    catch(Exception ex) {
+        sh "oc delete project ${dev} || true"
+    }
+}

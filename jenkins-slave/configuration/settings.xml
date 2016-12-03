@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+	<pluginGroups>
+
+	</pluginGroups>
+
+	<proxies>
+
+	</proxies>
+	<servers>
+		<server>
+			<id>vip-releases</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+		<server>
+			<id>vip-snapshots</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+
+		<server>
+			<id>OSE-API-releases</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+		<server>
+			<id>OSE-API-snapshots</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+
+		<server>
+			<id>fusesource.m2</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+		<server>
+			<id>fusesource.ea</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+		<server>
+			<id>redhat.ga</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+		<server>
+			<id>JBoss</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+		<server>
+			<id>JBoss-CE</id>
+			<username>ci_build</username>
+			<password>{bpr9PvWrkmgH1rgfexBMjoGrqkCCq2jWrWX8HfK9SVFuCyHu6BbPoaL9I1ZZ+zeS}</password>
+		</server>
+
+
+	</servers>
+
+	<mirrors>
+
+		<mirror>
+			<id>public</id>
+			<name>Nexus Schiphol</name>
+			<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/public</url>
+			<mirrorOf>central</mirrorOf>
+		</mirror>
+	</mirrors>
+
+	<profiles>
+
+		<profile>
+			<id>nexus</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<repositories>
+				<repository>
+					<id>public</id>
+					<name>Nexus Schiphol</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/public</url>
+				</repository>
+				<repository>
+					<id>vip-releases</id>
+					<name>VIP Releases</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/vip-releases</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</repository>
+				<repository>
+					<id>vip-snapshots</id>
+					<name>VIP Snapshots</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/vip-snapshots</url>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</repository>
+				<repository>
+					<id>OSE-API-releases</id>
+					<name>asb-releases</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/OSE-API-Releases/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</repository>
+				<repository>
+					<id>OSE-API-snapshots</id>
+					<name>asb-snapshots</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/OSE-API-Snapshots/</url>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+				</repository>
+
+				<!-- Fuse repos -->
+				<repository>
+					<id>fusesource.m2</id>
+					<name>FuseSource Community Release Repository</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/public</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</repository>
+				<repository>
+					<id>fusesource.ea</id>
+					<name>FuseSource Community Early Access Release Repository</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/ea</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</repository>
+				<repository>
+					<id>redhat.ga</id>
+					<name>Red Hat General Availability Repository</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/RedHat-GA/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</repository>
+				<repository>
+					<id>JBoss</id>
+					<name>JBoss</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/JBoss/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</repository>
+				<repository>
+					<id>JBoss-CE</id>
+					<name>JBoss-CE</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/JBoss-CE/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</repository>
+
+
+			</repositories>
+			<pluginRepositories>
+				<pluginRepository>
+					<id>public</id>
+					<name>Nexus Schiphol</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/public</url>
+				</pluginRepository>
+				<pluginRepository>
+					<id>vip-releases</id>
+					<name>VIP Releases</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/vip-releases</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</pluginRepository>
+				
+				<!-- Fuse plugin repos -->
+				<pluginRepository>
+					<id>fusesource.m2</id>
+					<name>FuseSource Community Release Repository</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/public</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</pluginRepository>
+				<pluginRepository>
+					<id>fusesource.ea</id>
+					<name>FuseSource Community Early Access Release Repository</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/ea</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</pluginRepository>
+
+
+				<pluginRepository>
+					<id>JBoss-CE</id>
+					<name>JBoss-CE</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/JBoss-CE/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</pluginRepository>
+
+				<pluginRepository>
+					<id>JBoss</id>
+					<name>JBoss</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/JBoss/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</pluginRepository>
+
+				<pluginRepository>
+					<id>redhat.ga</id>
+					<name>Red Hat General Availability Repository</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/RedHat-GA/</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+						<updatePolicy>never</updatePolicy>
+					</releases>
+				</pluginRepository>
+				<pluginRepository>
+					<id>public</id>
+					<name>public</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/groups/public/</url>
+				</pluginRepository>
+				<pluginRepository>
+					<id>asb-releases</id>
+					<name>asb-releases</name>
+					<url>http://nexus-cicd.openshift.schiphol.nl/content/repositories/asb-releases/</url>
+				</pluginRepository>
+
+			</pluginRepositories>
+		</profile>
+	</profiles>
+
+
+
+</settings>
